@@ -190,6 +190,25 @@ def test_lambda_args():
     assert np.allclose(b, expected)
 
 
+def test_tasklet_connectors_shadow_closure():
+    @dace.program
+    def tester(A: dace.float64[1], B: dace.float64[1], R: dace.float64[1]):
+        with dace.tasklet:
+            a << A[0]
+            b << B[0]
+            r >> R[0]
+            r = a + b
+
+    # Closure variables that share their names with the tasklet connectors
+    a, b, r = 1, 2, 3
+
+    A = np.random.rand(1)
+    B = np.random.rand(1)
+    R = np.zeros(1)
+    tester(A, B, R)
+    assert np.allclose(R, A + B)
+
+
 if __name__ == "__main__":
     test_instantiated_global()
     test_instantiated_global_resolve_functions()
@@ -199,3 +218,4 @@ if __name__ == "__main__":
     test_dead_code_elimination_noelse()
     test_dead_code_elimination_unreachable()
     test_lambda_args()
+    test_tasklet_connectors_shadow_closure()

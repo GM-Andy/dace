@@ -831,7 +831,13 @@ class GlobalResolver(astutils.ExtNodeTransformer, astutils.ASTHelperMixin):
         # Ignore memlet targets in tasklets
         if isinstance(node.value, ast.BinOp):
             if isinstance(node.value.op, (ast.LShift, ast.RShift)):
-                # Do not visit node.value.left
+                # Do not visit node.value.left, but register it as a local name (connector) so that
+                # uses in the tasklet body are not resolved to globals or closure variables
+                target = node.value.left
+                if isinstance(target, ast.Call):  # Dynamic memlet, e.g., ``a(-1) << A``
+                    target = target.func
+                if isinstance(target, ast.Name):
+                    self.current_scope.add(target.id)
                 node.value.right = self.visit(node.value.right)
                 return node
         return self.generic_visit(node)
